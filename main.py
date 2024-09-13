@@ -1,12 +1,10 @@
 import cirq
 
-q0, q1, q2 = cirq.LineQubit.range(3)
-circuit = cirq.Circuit()
-circuit.append([cirq.X(q0), cirq.X(q1)])
-circuit.append(cirq.TOFFOLI(q0, q1, q2))
-circuit.append(cirq.measure(q0, q1, q2))
-print(circuit)
-
-simulator = cirq.Simulator()
-result = simulator.run(circuit, repetitions=10)
-print(result)
+qreg = [cirq.LineQubit(x) for x in range(2)]
+circ = cirq.Circuit()
+circ.append([cirq.H(qreg[0]), cirq.CNOT(qreg[0], qreg[1])])
+print(circ)
+circ.append(cirq.measure(*qreg, key='z'))
+sim = cirq.Simulator()
+res = sim.run(circ, repetitions=100)
+print(res.histogram(key='z'))
