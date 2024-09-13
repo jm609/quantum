@@ -1,10 +1,25 @@
+import matplotlib.pyplot as plt
 import cirq
+import sympy
 
-qreg = [cirq.LineQubit(x) for x in range(2)]
+qbit = cirq.LineQubit(0)
 circ = cirq.Circuit()
-circ.append([cirq.H(qreg[0]), cirq.CNOT(qreg[0], qreg[1])])
+
+symbol = sympy.Symbol('t')
+circ.append(cirq.XPowGate(exponent=symbol)(qbit))
+circ.append(cirq.measure(qbit, key="z"))
 print(circ)
-circ.append(cirq.measure(*qreg, key='z'))
+
+sweep = cirq.Linspace(key=symbol.name, start=0.0, stop=2.0, length=100)
+
 sim = cirq.Simulator()
-res = sim.run(circ, repetitions=100)
-print(res.histogram(key='z'))
+res = sim.run_sweep(circ, sweep, repetitions=100)
+
+angles = [x[0][1] for x in sweep.param_tuples()]
+zeroes = [res[i].histogram(key="z")[0] / 1000 for i in range(len(res))]
+plt.plot(angles, zeroes, "--", linewidth=3)
+
+plt.ylabel("Measurement Frequency of 0")
+plt.xlabel("Power of X Gate")
+plt.grid()
+plt.savefig("param-sweep-cirq.png", format="png")
