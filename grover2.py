@@ -3,6 +3,8 @@ from qiskit_aer import Aer
 from qiskit.circuit.library import MCMT
 from qiskit.visualization import circuit_drawer
 import random
+import numpy as np
+from qiskit import transpile
 
 def create_oracle(circuit, input_qubits, ancilla_qubit, x_bits):
     # 타겟 상태에 대한 오라클 구현
@@ -19,17 +21,19 @@ def create_oracle(circuit, input_qubits, ancilla_qubit, x_bits):
             circuit.x(qubit)
 
 def create_diffusion(circuit, input_qubits):
-    # Diffusion 연산자 구현
+    # 개선된 확산 연산자
     circuit.h(input_qubits)
     circuit.x(input_qubits)
     
-    # 다중 제어 Z-게이트 구현
+    # 위상 킥백 감소를 위한 제어-Z 구현
     circuit.h(input_qubits[-1])
-    circuit.mcx(input_qubits[:-1], input_qubits[-1])
+    circuit.mcx(input_qubits[:-1], input_qubits[-1], 
+               mode='noancilla')  # 보조 큐비트 없이 구현
     circuit.h(input_qubits[-1])
     
     circuit.x(input_qubits)
     circuit.h(input_qubits)
+    circuit.barrier()  # 회로 최적화 제어
 
 def create_grover_circuit(qubit_count, x_bits):
     # 레지스터 생성
@@ -45,17 +49,19 @@ def create_grover_circuit(qubit_count, x_bits):
     circuit.x(ancilla)
     circuit.h(ancilla)
     
-    # Grover 반복 횟수 계산 (π/4 * √N에 가장 가까운 정수)
-    iterations = int(round(3.14159 / 4.0 * 2**(qubit_count/2)))
+    # 최적의 반복 횟수 계산 개선
+    N = 2**qubit_count
+    iterations = int(round(3.14159265359 * np.sqrt(N)/4.0))
     
-    # Grover 반복
+    # 진폭 증폭을 위한 위상 반전 추가
     for _ in range(iterations):
-        # 오라클 적용
         create_oracle(circuit, qr, ancilla, x_bits)
-        # 확산 연산자 적용
+        # 위상 보정
+        circuit.phase(np.pi, qr)
         create_diffusion(circuit, qr)
     
-    # 측정
+    # 측정 전 추가 게이트
+    circuit.barrier()  # 최적화 방지를 위한 장벽 추가
     circuit.measure(qr, cr)
     
     return circuit
@@ -66,7 +72,7 @@ def bitstring(bits):
 def main():
     # 파라미터 설정
     qubit_count = 2  # 2개의 큐비트로 시작
-    shots = 100    # 측정 횟수
+    shots = 1000    # 측정 횟수 증가
     
     # 무작위 타겟 비트열 생성
     x_bits = [random.randint(0, 1) for _ in range(qubit_count)]
@@ -77,9 +83,19 @@ def main():
     print('회로:')
     print(circuit)
     
-    # 시뮬레이션 실행
+    # 실행 파라미터 조정
     backend = Aer.get_backend('qasm_simulator')
-    job = backend.run(circuit, shots=shots)
+    backend_options = {
+        "optimization_level": 3,
+        "initial_statevector": True,
+        "zero_threshold": 1e-10
+    }
+    
+    # 회로 실행
+    job = backend.run(circuit, 
+                     shots=shots,
+                     optimization_level=3,
+                     backend_options=backend_options)
     result = job.result()
     counts = result.get_counts()
     
