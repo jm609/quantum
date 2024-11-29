@@ -48,7 +48,7 @@ def main():
     print(circuit)
     repetitions = 1000
     result = cirq.Simulator().run(program=circuit, repetitions=repetitions)
-
+    
     # 결과 수집
     a = np.array(result.measurements['a'][:, 0])
     b = np.array(result.measurements['b'][:, 0])

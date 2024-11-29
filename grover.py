@@ -27,14 +27,15 @@ def make_grover_circuit(input_qubits, output_qubit, oracle):
     c.append(cirq.H.on(input_qubits[1]))
     c.append(cirq.X.on_each(*input_qubits))
     c.append(cirq.H.on_each(*input_qubits))
+    c.append(cirq.measure(*input_qubits, key='result'))
     return c
 
 def bitstring(bits):
     return ''.join(str(int(b)) for b in bits)
 
 def main():
-    qubit_count = 2
-    circuit_sample_count = 10
+    qubit_count = 4
+    circuit_sample_count = 100
 
     (input_qubits, output_qubit) = set_io_qubits(qubit_count)
     x_bits = [random.randint(0, 1) for _ in range(qubit_count)]
