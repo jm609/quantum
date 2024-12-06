@@ -34,7 +34,7 @@ def bitstring(bits):
     return ''.join(str(int(b)) for b in bits)
 
 def main():
-    qubit_count = 4
+    qubit_count = 2
     circuit_sample_count = 100
 
     (input_qubits, output_qubit) = set_io_qubits(qubit_count)
