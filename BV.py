@@ -3,7 +3,7 @@ import cirq
 
 def main():
     qubit_count = 8
-    circuit_sample_count = 3
+    circuit_sample_count = 10
 
     input_qubits = [cirq.GridQubit(i, 0) for i in range(qubit_count)]
     output_qubit = cirq.GridQubit(qubit_count, 0)
